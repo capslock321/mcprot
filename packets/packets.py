@@ -1,9 +1,37 @@
+# -*- coding: utf-8 -*-
+
+"""
+MIT License
+
+Copyright (c) 2021 capslock321
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import struct
 import asyncio
 import gc
 import logging
 import zlib
 import regex
+
+from typing import Tuple, Union
 
 from .auth import Authentication
 from .exceptions import (
@@ -13,7 +41,9 @@ from .exceptions import (
 )
 from .utils.varint import write_varint, read_varint, read_data, decode_varint, pack_data
 
-REGEX = regex.compile(r"\{(?:[^{}]|(?R))*\}")
+REGEX = regex.compile(
+    r"\{(?:[^{}]|(?R))*\}"
+)  # Regex for stuff idk ill go see if it's needed.
 
 """
 FILE STRUCTURE, TO BE CHANGED IF ISSUES ARISE
@@ -30,7 +60,13 @@ packets/
 """
 
 
-class Packet:
+class Packet:  # add magic methods in here ffs
+    """The packet class, stores information about the packet.
+    Attributes:
+        length: The length of the packet.
+        packet_id: The packet id of the packet.
+        packet_data: The data recieved pertaining to this packet."""
+
     def __init__(self, length, packet_id, packet_data):
         self.length = length
         self.packet_id = packet_id
@@ -38,6 +74,12 @@ class Packet:
 
 
 class CompressedPacket(Packet):
+    """Same as packet class, but includes the decompressed_size of the packet.
+    If the decompressed_size is 0 then the packet is uncompressed.
+    Attributes:
+        decompressed_size: The size after decompression.
+    """
+
     def __init__(self, *args, decompressed_size):
         super().__init__(*args)
         self.decompressed_size = decompressed_size
@@ -45,13 +87,19 @@ class CompressedPacket(Packet):
 
 class PacketStream:
     def __init__(self, host, port):
-        """
-        NOW OBSOLETE!
-        The packet states will be corresponded with an integer as given below.
-        Note: Status is left out because it be useless for my application.
-            Handshake: 0
-            Login: 1
-            Play: 2
+        """The running packet stream, the connection the server.
+        Attributes:
+            host: The host to connect to.
+            port: The port to connect to.
+            loop: The event loop.
+            handlers: The event handlers.
+            encryptor: The packet encryptor.
+            decryptor: The packet decryptor.
+            threshold (int): The limit before packets have to be compressed.
+            reader: The stream reader.
+            writer: The stream writer.
+        Raises:
+            InvalidConnectionDetails: If the host or port is invalid.
         """
         self.host = host
         self.port = port
@@ -68,29 +116,56 @@ class PacketStream:
             raise InvalidConnectionDetails("The host or port is invalid!")
 
     def packet_handler(self, packet_id):
+        """Decorator to add packet handler.
+        Args:
+            packet_id (int): The packet_id in which to handle."""
+
         def handler(function):
             self.handlers[packet_id] = function
+
         return handler
 
-    def add_packet_handler(self, function, packet_id):
+    def add_packet_handler(self, function, packet_id) -> bool:
+        """Adds a packet handler.
+        Args:
+            function: The function in which to handle.
+            packet_id: The packet_id of which to handle.
+        Returns:
+            bool: True if successful."""
         self.handlers[packet_id] = function
         return True
 
     @staticmethod
-    def get_inst(function):
+    def get_obj(function) -> Union[object, bool]:
+        """Gets the class object where the function most likely came from.
+        Args:
+            function: The function of which to get the class of.
+        Returns:
+            obj: Class object if found.
+            bool: False if a class object was not found."""
         cls_name = function.__qualname__.rsplit(".", 1)[0]
         for obj in gc.get_objects():
             if type(obj).__name__ == cls_name:
                 return obj
         return False
 
-    async def get_status(self):
+    async def get_status(self) -> bytes:
+        """Gets server info, such as version info.
+        Returns:
+            bytes: Server information."""
         payload = (b"\x00\x00", self.host, self.port, b"\x01")
         await self.send_packet(payload)
         await self.send_packet((b"\x00",))
         return await self.reader.read(1024)
 
-    async def decompress_data(self):
+    async def decompress_data(self) -> Tuple[bytes, int, int, int]:
+        """Decompresses packet data if the packet data is compressed.
+        Returns:
+            packet_data: Packet bytes given by the server.
+            packet_id: Packet ID given by the server.
+            length: Length of packet.
+            decompressed_size: Packet size after decompression. Can be 0.
+        """
         length = await read_varint(self.reader, self.decryptor)
         packet_data = await read_data(self.reader, length, self.decryptor)
         decompressed_size = decode_varint(packet_data)
@@ -107,7 +182,12 @@ class PacketStream:
             packet_id = decode_varint(packet_data[1:])
             return packet_data, packet_id, length, decompressed_size
 
-    async def decode_payload(self):
+    async def decode_payload(self) -> Union[Packet, CompressedPacket]:
+        """Decodes the payload to get it's length, and ID.
+        If need be, it will decompress the packet.
+        Returns:
+            Packet: Packet information given by the server.
+        """
         if self.threshold >= 0:
             (
                 packet_data,
@@ -138,6 +218,18 @@ class PacketStream:
         uuid: str = None,
         handle_keep_alives: bool = True,
     ):
+        """The connection to the server, will require a username, and a version (default: 754).
+        If the server is an online server, an access_token and uuid is required.
+        Args:
+            username (str): The username in which to connect to the server under.
+            version (int): The protocol version in which to use.
+            access_token (str): (Optional) - The access token to connect to the server if the server is an online server.
+            uuid (str): (Optional) - The uuid of the player to authenticate under.
+            handle_keep_alives (bool): If you wish to handle the keep alives automatically.
+        Raises:
+            OnlineServerException: If the server is an online server, but no access_token and uuid was provided.
+            AuthenticationRateLimit: If you are ratelimited from authenticating to Mojang.
+        """
         client_version = write_varint(version)
         await self.send_packet((b"\x00", client_version, self.host, self.port, b"\x02"))
         logging.info(
@@ -197,13 +289,17 @@ class PacketStream:
                     "Packet (ID: {}) with known handler found, executing {}."
                     "".format(packet.packet_id, function.__qualname__)
                 )
-                function_class = self.get_inst(function)
+                function_class = self.get_obj(function)
                 if function_class is not False:
                     await function(function_class, packet)
                 else:  # If the method is not in a class.
                     await function(packet)
 
     async def send_packet(self, payload):
+        """Sends a packet given a payload.
+        Args:
+            payload: A list of items to pack and send.
+        """
         packets = list()
         for packet in payload:
             packets.append(pack_data(packet))
@@ -245,19 +341,3 @@ class PacketStream:
                 )
             )
             return self.writer.write(payload)
-
-
-if __name__ == "__main__":
-    connection = PacketStream("localhost", 25565)
-    loop = asyncio.get_event_loop()
-    # Note: Token will expire every 24 hours from when it is generated.
-    # print(loop.run_until_complete(connection.get_status()))
-    loop.run_until_complete(
-        connection.connect(
-            "capslock321",
-            756,
-            open("token.txt").read(),
-            "1d34cf0a36b64b178eba12d710dff822",
-        )
-    )
-    # 3:44PM 8-21-21 | Sync Code

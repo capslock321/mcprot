@@ -1,7 +1,32 @@
-import aiohttp
-import asyncio
+# -*- coding: utf-8 -*-
 
-from AMP.packets.exceptions import IncorrectCredentials
+"""
+MIT License
+
+Copyright (c) 2021 capslock321
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+import aiohttp
+
+from . import IncorrectCredentials
 
 AUTH_TOKEN_URL = "https://login.live.com/oauth20_token.srf"
 
@@ -15,6 +40,15 @@ MINECRAFT_URL = "https://api.minecraftservices.com/authentication/login_with_xbo
 async def get_access_token(
     client_id, client_secret, code, redirect_uri="https://localhost"
 ):
+    """Given the client_id, client_secret, code and redirect_uri, get the XBL token.
+    Args:
+        client_id (str): The client_id from your azure application.
+        client_secret (str): The client_secret form your azure application
+        code: The code given by the first step.
+        redirect_uri (str): The redirect uri you put in your application.
+    Raises:
+        IncorrectCredentials: If the client_id, client_secret, code or redirect_uri is incorrect.
+    """
     payload = {
         "client_id": client_id,
         "client_secret": client_secret,
@@ -33,6 +67,12 @@ async def get_access_token(
 
 
 async def get_xbl_token(access_token: str):
+    """Gets the XBL token given an auth token.
+    Args:
+        access_token: Auth token from previous step.
+    Raises:
+        IncorrectCredentials: If the authentication token is incorrect.
+    """
     payload = {
         "Properties": {
             "AuthMethod": "RPS",
@@ -51,6 +91,12 @@ async def get_xbl_token(access_token: str):
 
 
 async def get_xsts_token(token: str):
+    """Gets the XSTS token and the user hash given the XBL token.
+    Args:
+        token: The XBL token to authenticate with.
+    Raises:
+        IncorrectCredentials: If the XBL token is incorrect.
+    """
     payload = {
         "Properties": {"SandboxId": "RETAIL", "UserTokens": [token]},
         "RelyingParty": "rp://api.minecraftservices.com/",
@@ -66,7 +112,16 @@ async def get_xsts_token(token: str):
             )
 
 
-async def get_token(token: str, uhs: str):
+async def get_token(token: str, uhs: str) -> str:
+    """Gets the access token given the XSTS token and the user hash.
+    Args:
+        token: The XSTS token from the previous step.
+        uhs: The user hash from the previous step.
+    Raises:
+        IncorrectCredentials: If the token or uhs is incorrect.
+    Returns:
+        str: The access token to authenticate with Mojang.
+    """
     payload = {"identityToken": "XBL3.0 x={};{}".format(uhs, token)}
     async with aiohttp.ClientSession() as session:
         async with session.post(MINECRAFT_URL, json=payload) as response:
@@ -74,17 +129,3 @@ async def get_token(token: str, uhs: str):
             if response.get("access_token") is None:
                 raise IncorrectCredentials("Incorrect token or uhs was provided.")
             return response["access_token"]
-
-
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    print(
-        loop.run_until_complete(
-            get_access_token(
-                "7afcf80a-04c5-4c20-8be6-bc7f274e5615",
-                "x9W7Q~EBQhhQsJp.to7ND4ActGJj4KXbEafua",
-                "M.R3_BL2.8fd36588-008a-7cb9-544c-1b23809d0d37",
-            )
-        )
-    )
-    # https://login.live.com/oauth20_authorize.srf?client_id=7afcf80a-04c5-4c20-8be6-bc7f274e5615&response_type=code%20&redirect_uri=https://localhost&scope=XboxLive.signin%20offline_access

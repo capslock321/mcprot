@@ -11,11 +11,15 @@ Bumping to 1.2.0a to denote
 """
 
 from .packets import PacketStream, Packet, CompressedPacket
-from .exceptions import OnlineServerException, InvalidConnectionDetails, AuthenticationRateLimit
+from .exceptions import (
+    OnlineServerException,
+    InvalidConnectionDetails,
+    AuthenticationRateLimit,
+)
 from .utils.varint import write_varint, read_varint, read_data, decode_varint
 
-__version__ = '1.2.0a'
+__version__ = "1.2.0a"
 
-__author__ = 'capslock321'
+__author__ = "capslock321"
 
-__license__ = 'MIT'
+__license__ = "MIT"
