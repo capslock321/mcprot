@@ -1,29 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-MIT License
-
-Copyright (c) 2021 capslock321
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
 import struct
 
 from typing import Union
@@ -32,9 +8,11 @@ from typing import Union
 async def read_varint(stream, decryptor=None) -> Union[bytes, bool]:
     """Reads the varint directly from the stream.
     If there is a decryptor, decrypt the packet first.
+
     Args:
         stream: The stream from where to read the bytes from.
         decryptor: The bytes decryptor if the packet is encrypted.
+
     Returns:
         bytes: packet_data if read was successful.
         bool: False if the read was not successful.
@@ -65,8 +43,10 @@ async def read_varint(stream, decryptor=None) -> Union[bytes, bool]:
 
 def pack_data(data) -> bytes:
     """Packs the data given for sending.
+
     Args:
         data: The data given.
+
     Returns:
         bytes: The packed byte data.
     """
@@ -84,10 +64,12 @@ def pack_data(data) -> bytes:
 async def read_data(stream, length, decryptor=None) -> bytes:
     """Reads from the packet stream.
     If the received data is not equal to the length, it will keep reading until it meets that length.
+
     Args:
         stream: The packet stream to read from.
         length: The amount of bytes to read.
         decryptor: If the packet is encrypted, decrypt the packet for reading.
+
     Returns:
         bytes: The packet data that was read.
     """
@@ -102,8 +84,10 @@ async def read_data(stream, length, decryptor=None) -> bytes:
 def decode_varint(byte_data) -> bytes:
     """Decode varint given byte data.
     Unlike read_varint, this does not read from the stream.
+
     Args:
         byte_data: The byte data from which to decode from.
+
     Returns:
         bytes: The decoded packet_data.
     """
@@ -117,8 +101,10 @@ def decode_varint(byte_data) -> bytes:
 
 def write_varint(data: int) -> bytes:
     """Given an integer, encode the integer into a varint.
+
     Args:
         data (int): The integer to encode into a varint.
+
     Returns:
         bytes: The encoded varint.
     """

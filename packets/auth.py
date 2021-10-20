@@ -63,8 +63,10 @@ class Authentication:
     def _decode_auth_data(self, packet_data: bytes) -> Tuple[bytes, bytes]:
         """Decode authentication data from the authentication packet.
         Retrives the public_key and the verify_token, both needed for authentication.
+
         Args:
             packet_data (bytes): The packet data that the server sent.
+
         Returns:
             bytes: public_key - The public_key the server sent.
             bytes: verify_token - The verify_token the server sent.
@@ -78,9 +80,11 @@ class Authentication:
     async def login(self, stream, packet_data: bytes):
         """Logs into the server using the given credentials.
         Retrives the public_key and the verify_token, both needed for authentication.
+
         Args:
             stream: The running stream.
             packet_data (bytes): The packet_data sent by the server.
+
         Returns:
             The encryptor and decryptor of the cipher generated.
         """
@@ -109,8 +113,10 @@ class Authentication:
     @staticmethod
     def create_cipher(shared_secret) -> Cipher:
         """Creates the cipher given a shared secret.
+
         Args:
             shared_secret (bytes): The generated shared_secret.
+
         Returns:
             Cipher: The cipher generated using the shared_secret.
         """
@@ -123,12 +129,15 @@ class Authentication:
         access_token: str, uuid: str, verification_hash: str
     ) -> bool:
         """Authenticates with Mojang.
+
         Args:
             access_token (str): The access_token which logs us in.
             uuid (str): The player's uuid.
             verification_hash (str): The generated hash.
+
         Returns:
             bool: True if the verification was successful.
+
         Raises:
             IncorrectCredentials: If the credentials given is incorrect.
         """
@@ -155,8 +164,10 @@ class Authentication:
         """Method is a modified version of the make_digest method from barneygale/quarry.
         As of 9/4/21 11:41 EST, the method is in the folder quarry.net
         with the file name crypto.py. Perhaps I can write my own but too lazy.
+
         Args:
             digest: The given hash.
+
         Returns:
             str: The generated hexdigest."""
         digest = int(digest.hexdigest(), 16)
@@ -168,8 +179,10 @@ class Authentication:
 
     def make_digest(self, hash_data):
         """Generates a hash given data.
+
         Args:
             hash_data: The hash data given.
+
         Returns:
             The generated sha1 hash.
         """

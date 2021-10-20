@@ -1,29 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-MIT License
-
-Copyright (c) 2021 capslock321
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
 import aiohttp
 
 from . import IncorrectCredentials
@@ -41,11 +17,13 @@ async def get_access_token(
     client_id, client_secret, code, redirect_uri="https://localhost"
 ):
     """Given the client_id, client_secret, code and redirect_uri, get the XBL token.
+
     Args:
         client_id (str): The client_id from your azure application.
         client_secret (str): The client_secret form your azure application
         code: The code given by the first step.
         redirect_uri (str): The redirect uri you put in your application.
+
     Raises:
         IncorrectCredentials: If the client_id, client_secret, code or redirect_uri is incorrect.
     """
@@ -68,8 +46,10 @@ async def get_access_token(
 
 async def get_xbl_token(access_token: str):
     """Gets the XBL token given an auth token.
+
     Args:
         access_token: Auth token from previous step.
+
     Raises:
         IncorrectCredentials: If the authentication token is incorrect.
     """
@@ -92,8 +72,10 @@ async def get_xbl_token(access_token: str):
 
 async def get_xsts_token(token: str):
     """Gets the XSTS token and the user hash given the XBL token.
+
     Args:
         token: The XBL token to authenticate with.
+
     Raises:
         IncorrectCredentials: If the XBL token is incorrect.
     """
@@ -114,11 +96,14 @@ async def get_xsts_token(token: str):
 
 async def get_token(token: str, uhs: str) -> str:
     """Gets the access token given the XSTS token and the user hash.
+
     Args:
         token: The XSTS token from the previous step.
         uhs: The user hash from the previous step.
+
     Raises:
         IncorrectCredentials: If the token or uhs is incorrect.
+
     Returns:
         str: The access token to authenticate with Mojang.
     """

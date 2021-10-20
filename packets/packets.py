@@ -62,6 +62,7 @@ packets/
 
 class Packet:  # add magic methods in here ffs
     """The packet class, stores information about the packet.
+
     Attributes:
         length: The length of the packet.
         packet_id: The packet id of the packet.
@@ -76,6 +77,7 @@ class Packet:  # add magic methods in here ffs
 class CompressedPacket(Packet):
     """Same as packet class, but includes the decompressed_size of the packet.
     If the decompressed_size is 0 then the packet is uncompressed.
+
     Attributes:
         decompressed_size: The size after decompression.
     """
@@ -86,8 +88,9 @@ class CompressedPacket(Packet):
 
 
 class PacketStream:
-    def __init__(self, host, port):
+    def __init__(self, host, port, version: int = 754):
         """The running packet stream, the connection the server.
+
         Attributes:
             host: The host to connect to.
             port: The port to connect to.
@@ -98,12 +101,14 @@ class PacketStream:
             threshold (int): The limit before packets have to be compressed.
             reader: The stream reader.
             writer: The stream writer.
+
         Raises:
             InvalidConnectionDetails: If the host or port is invalid.
         """
         self.host = host
         self.port = port
         self.loop = asyncio.get_event_loop()
+        self.version = version
         self.handlers = dict()
         self.encryptor = None
         self.decryptor = None
@@ -127,9 +132,11 @@ class PacketStream:
 
     def add_packet_handler(self, function, packet_id) -> bool:
         """Adds a packet handler.
+
         Args:
             function: The function in which to handle.
             packet_id: The packet_id of which to handle.
+
         Returns:
             bool: True if successful."""
         self.handlers[packet_id] = function
@@ -138,8 +145,10 @@ class PacketStream:
     @staticmethod
     def get_obj(function) -> Union[object, bool]:
         """Gets the class object where the function most likely came from.
+
         Args:
             function: The function of which to get the class of.
+
         Returns:
             obj: Class object if found.
             bool: False if a class object was not found."""
@@ -151,6 +160,7 @@ class PacketStream:
 
     async def get_status(self) -> bytes:
         """Gets server info, such as version info.
+
         Returns:
             bytes: Server information."""
         payload = (b"\x00\x00", self.host, self.port, b"\x01")
@@ -160,12 +170,12 @@ class PacketStream:
 
     async def decompress_data(self) -> Tuple[bytes, int, int, int]:
         """Decompresses packet data if the packet data is compressed.
+
         Returns:
             packet_data: Packet bytes given by the server.
             packet_id: Packet ID given by the server.
             length: Length of packet.
-            decompressed_size: Packet size after decompression. Can be 0.
-        """
+            decompressed_size: Packet size after decompression. Can be 0."""
         length = await read_varint(self.reader, self.decryptor)
         packet_data = await read_data(self.reader, length, self.decryptor)
         decompressed_size = decode_varint(packet_data)
@@ -185,6 +195,7 @@ class PacketStream:
     async def decode_payload(self) -> Union[Packet, CompressedPacket]:
         """Decodes the payload to get it's length, and ID.
         If need be, it will decompress the packet.
+
         Returns:
             Packet: Packet information given by the server.
         """
@@ -213,28 +224,29 @@ class PacketStream:
     async def connect(
         self,
         username,
-        version: int = 754,
         access_token: str = None,
         uuid: str = None,
         handle_keep_alives: bool = True,
     ):
         """The connection to the server, will require a username, and a version (default: 754).
         If the server is an online server, an access_token and uuid is required.
+
         Args:
             username (str): The username in which to connect to the server under.
             version (int): The protocol version in which to use.
             access_token (str): (Optional) - The access token to connect to the server if the server is an online server.
             uuid (str): (Optional) - The uuid of the player to authenticate under.
             handle_keep_alives (bool): If you wish to handle the keep alives automatically.
+
         Raises:
             OnlineServerException: If the server is an online server, but no access_token and uuid was provided.
             AuthenticationRateLimit: If you are ratelimited from authenticating to Mojang.
         """
-        client_version = write_varint(version)
+        client_version = write_varint(self.version)
         await self.send_packet((b"\x00", client_version, self.host, self.port, b"\x02"))
         logging.info(
             "Preforming handshake with version {} on {}:{}.".format(
-                version, self.host, self.port
+                self.version, self.host, self.port
             )
         )
         await self.send_packet((b"\x00", username))
@@ -297,6 +309,7 @@ class PacketStream:
 
     async def send_packet(self, payload):
         """Sends a packet given a payload.
+
         Args:
             payload: A list of items to pack and send.
         """
