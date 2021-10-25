@@ -38,29 +38,15 @@ from .exceptions import (
     OnlineServerException,
     InvalidConnectionDetails,
     AuthenticationRateLimit,
+    OutdatedClientException,
 )
 from .utils.varint import write_varint, read_varint, read_data, decode_varint, pack_data
 
 REGEX = regex.compile(
     r"\{(?:[^{}]|(?R))*\}"
-)  # Regex for stuff idk ill go see if it's needed.
+)
 
-"""
-FILE STRUCTURE, TO BE CHANGED IF ISSUES ARISE
-packets/
-    __init__.py - self explanatory
-    auth.py - we add auth shit
-    packets.py - main stream runner
-    exceptions.py - exceptions
-    handlers.py - two methods, maybe idk
-    utils/ 
-        varint.py - varint shits
-        gat.py - microsoft auth shit 
-
-"""
-
-
-class Packet:  # add magic methods in here ffs
+class Packet:
     """The packet class, stores information about the packet.
 
     Attributes:
@@ -72,6 +58,9 @@ class Packet:  # add magic methods in here ffs
         self.length = length
         self.packet_id = packet_id
         self.packet_data = packet_data
+
+    def __str__(self):
+        return self.packet_data
 
 
 class CompressedPacket(Packet):
@@ -86,9 +75,12 @@ class CompressedPacket(Packet):
         super().__init__(*args)
         self.decompressed_size = decompressed_size
 
+    def __str__(self):
+        return self.packet_data
+
 
 class PacketStream:
-    def __init__(self, host, port, version: int = 754):
+    def __init__(self, host, port, version: int = None, loop = asyncio.get_event_loop()):
         """The running packet stream, the connection the server.
 
         Attributes:
@@ -98,7 +90,7 @@ class PacketStream:
             handlers: The event handlers.
             encryptor: The packet encryptor.
             decryptor: The packet decryptor.
-            threshold (int): The limit before packets have to be compressed.
+            threshold (int): The limit before mcprot have to be compressed.
             reader: The stream reader.
             writer: The stream writer.
 
@@ -107,12 +99,12 @@ class PacketStream:
         """
         self.host = host
         self.port = port
-        self.loop = asyncio.get_event_loop()
         self.version = version
         self.handlers = dict()
         self.encryptor = None
         self.decryptor = None
         self.threshold = -1
+        self.loop = loop
         if isinstance(host, str) and isinstance(port, int):
             self.reader, self.writer = self.loop.run_until_complete(
                 asyncio.open_connection(host, port)
@@ -242,6 +234,10 @@ class PacketStream:
             OnlineServerException: If the server is an online server, but no access_token and uuid was provided.
             AuthenticationRateLimit: If you are ratelimited from authenticating to Mojang.
         """
+        if self.version is None:
+            # Attempt to get protocol version.
+            logging.info("A client version was not provided. Attempting to find server version.")
+            self.version = self.get_status()
         client_version = write_varint(self.version)
         await self.send_packet((b"\x00", client_version, self.host, self.port, b"\x02"))
         logging.info(
@@ -252,6 +248,8 @@ class PacketStream:
         await self.send_packet((b"\x00", username))
         logging.info("Starting login process with username {}.".format(username))
         packet = await self.decode_payload()
+        if "Outdated client! Please use " in str(packet.packet_data):
+            raise OutdatedClientException("Outdated Client! {}".format(packet.packet_data[2:]))
         if packet.packet_id == 1:
             logging.info("Server is an online server, attempting to login.")
             if access_token is None or uuid is None:
@@ -307,7 +305,7 @@ class PacketStream:
                 else:  # If the method is not in a class.
                     await function(packet)
 
-    async def send_packet(self, payload):
+    async def send_packet(self, payload):  # A bit redundant, maybe shorten it.
         """Sends a packet given a payload.
 
         Args:

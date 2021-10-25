@@ -53,3 +53,6 @@ class IncorrectCredentials(PacketException):
     """Raises when the given information is incorrect."""
 
     pass
+
+class OutdatedClientException(PacketException):
+    """Raises if the client is outdated. You can get the server's version by using the get_status method."""
