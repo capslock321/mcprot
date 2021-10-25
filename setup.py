@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="mcprot",
-    version="1.2.0",
+    version="1.2.1",
     author="capslock321",
     description="Another Minecraft packet protocol handler, designed because quarry wasn't working for me.",
     url="https://github.com/capslock321/mcprot",
