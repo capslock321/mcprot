@@ -16,12 +16,14 @@ Feel free to fork the project and edit it to your liking as long as you do not v
 
 Other Information
 ==================================
-    Where can I find examples on how to use it?
-You can find examples in the example folder if you wish to use it.
-    Why isn't there automatic packet data parsing?
-This library is designed to be as hands off as it can be.
-    How can I install this anyways?
-You can do using git:
+Q: Where can I find examples on how to use it?
+A: You can find examples in the example folder if you wish to use it.
+
+Q:Why isn't there automatic packet data parsing?
+A:This library is designed to be as hands off as it can be.
+
+Q: How can I install this anyways?
+A: You can do using git:
 
 
 

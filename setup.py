@@ -6,6 +6,7 @@ setuptools.setup(
     author="capslock321",
     description="Another Minecraft packet protocol handler, designed because quarry wasn't working for me.",
     url="https://github.com/capslock321/mcprot",
+    packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
