@@ -29,7 +29,7 @@ This library is designed to be as hands off as it can be.
 How can I install this anyways?
 ---------------------------------
 
-You install this library by using Git:
+You can install this library by using Git:
 
 .. code-block:: bash
 
